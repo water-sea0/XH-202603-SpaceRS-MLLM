@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>遥感多模态数据集统一方案 — 可视化讲解</title>
+<style>
+  :root {
+    --bg: #f8f9fb;
+    --card: #fff;
+    --text: #2d3436;
+    --muted: #636e72;
+    --accent: #0984e3;
+    --accent2: #6c5ce7;
+    --green: #00b894;
+    --orange: #e17055;
+    --red: #d63031;
+    --border: #dfe6e9;
+    --code-bg: #2d3436;
+    --tag-bg: #dfe6e9;
+    --highlight: #ffeaa7;
+    --phase1: #74b9ff;
+    --phase2: #a29bfe;
+    --phase3: #fd79a8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+    padding-bottom: 80px;
+  }
+
+  /* ===== Navigation ===== */
+  nav {
+    position: fixed; top: 0; width: 100%; z-index: 100;
+    background: rgba(255,255,255,0.92); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px; display: flex; align-items: center; gap: 20px;
+    height: 48px; font-size: 13px; overflow-x: auto;
+  }
+  nav a { color: var(--muted); text-decoration: none; white-space: nowrap; }
+  nav a:hover { color: var(--accent); }
+  nav .brand { font-weight: 700; color: var(--text); margin-right: 8px; }
+
+  /* ===== Layout ===== */
+  .container { max-width: 960px; margin: 72px auto 0; padding: 0 24px; }
+
+  /* ===== Cover ===== */
+  .cover {
+    background: linear-gradient(135deg, #0c1b33 0%, #1a3a5c 40%, #2d1b69 100%);
+    color: #fff; border-radius: 16px; padding: 60px 48px; margin-bottom: 32px; text-align: center;
+    box-shadow: 0 8px 40px rgba(9,132,227,0.15);
+  }
+  .cover h1 { font-size: 36px; font-weight: 800; letter-spacing: 2px; margin-bottom: 12px; }
+  .cover .subtitle { font-size: 18px; opacity: 0.85; font-weight: 400; }
+  .cover .badges { margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .cover .badge { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); padding: 6px 16px; border-radius: 20px; font-size: 13px; }
+
+  /* ===== Sections ===== */
+  section { margin-bottom: 40px; }
+  .section-title {
+    font-size: 26px; font-weight: 700; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-num {
+    background: var(--accent); color: #fff; width: 40px; height: 40px;
+    border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; flex-shrink: 0;
+  }
+  .section-desc { color: var(--muted); font-size: 15px; margin-bottom: 20px; }
+
+  /* ===== Cards ===== */
+  .card {
+    background: var(--card); border-radius: 12px; padding: 28px; margin-bottom: 16px;
+    border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .card h3 { font-size: 18px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  /* ===== Code ===== */
+  pre {
+    background: var(--code-bg); color: #e0e0e0; border-radius: 10px;
+    padding: 16px 20px; overflow-x: auto; font-size: 13px; line-height: 1.7;
+    margin: 12px 0; font-family: "Cascadia Code", "Fira Code", "Consolas", "Microsoft YaHei", monospace;
+  }
+  code { font-family: "Cascadia Code", "Fira Code", "Consolas", monospace; }
+  .inline-code {
+    background: var(--tag-bg); color: var(--accent); padding: 2px 7px;
+    border-radius: 4px; font-size: 0.9em; font-weight: 500;
+  }
+
+  /* ===== Highlights ===== */
+  .token-highlight { color: #fdcb6e; font-weight: 600; }
+  .str-highlight { color: #55efc4; }
+  .key-highlight { color: #74b9ff; }
+  .comment { color: #636e72; font-style: italic; }
+
+  /* ===== Comparison ===== */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .compare .before { background: #fff5f5; border: 1px solid #fab1a0; border-radius: 10px; padding: 20px; }
+  .compare .after  { background: #f0fff4; border: 1px solid #55efc4; border-radius: 10px; padding: 20px; }
+  .compare h4 { font-size: 15px; margin-bottom: 8px; display: flex; gap: 6px; }
+
+  /* ===== Table ===== */
+  table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
+  th { background: #f1f2f6; text-align: left; padding: 10px 14px; font-weight: 600; }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  tr:hover { background: #f8f9fb; }
+
+  /* ===== Tags ===== */
+  .tag {
+    display: inline-block; padding: 2px 10px; border-radius: 12px;
+    font-size: 12px; font-weight: 600;
+  }
+  .tag-en { background: #dfe6e9; color: #2d3436; }
+  .tag-zh { background: #fab1a0; color: #fff; }
+  .tag-arrow { background: #74b9ff; color: #fff; }
+  .tag-json { background: #55efc4; color: #1e272e; }
+  .tag-llava { background: #a29bfe; color: #fff; }
+  .tag-hf { background: #ffeaa7; color: #2d3436; }
+
+  /* ===== Flow Diagram ===== */
+  .flow {
+    display: flex; align-items: center; gap: 0; flex-wrap: wrap;
+    justify-content: center; padding: 20px 0;
+  }
+  .flow-node {
+    background: var(--card); border: 2px solid var(--accent); border-radius: 12px;
+    padding: 14px 20px; text-align: center; font-weight: 600; font-size: 14px;
+    white-space: nowrap;
+  }
+  .flow-arrow { font-size: 22px; color: var(--accent); margin: 0 8px; font-weight: 700; }
+  .flow-node.dataset { border-color: var(--orange); }
+  .flow-node.script  { border-color: var(--accent2); }
+  .flow-node.output  { border-color: var(--green); }
+
+  /* ===== Timeline ===== */
+  .timeline { position: relative; padding-left: 32px; }
+  .timeline::before {
+    content: ''; position: absolute; left: 11px; top: 0; bottom: 0; width: 2px; background: var(--border);
+  }
+  .tl-item { position: relative; margin-bottom: 20px; }
+  .tl-item::before {
+    content: ''; position: absolute; left: -25px; top: 6px;
+    width: 12px; height: 12px; border-radius: 50%; background: var(--accent);
+    border: 3px solid var(--bg);
+  }
+  .tl-item h4 { font-size: 15px; margin-bottom: 4px; }
+  .tl-item p { color: var(--muted); font-size: 13px; }
+
+  /* ===== Feature Cards ===== */
+  .feature { display: flex; gap: 12px; align-items: flex-start; }
+  .feature-icon { font-size: 32px; flex-shrink: 0; width: 48px; text-align: center; }
+
+  /* ===== Warning ===== */
+  .note {
+    background: #fffbf0; border-left: 4px solid #fdcb6e; padding: 14px 20px;
+    border-radius: 0 8px 8px 0; margin: 12px 0; font-size: 14px;
+  }
+
+  /* ===== Data sample with annotations ===== */
+  .annotated-json {
+    position: relative; background: var(--code-bg); border-radius: 10px;
+    padding: 20px 24px; margin: 12px 0; font-family: monospace; font-size: 13px;
+    line-height: 2; color: #e0e0e0; overflow-x: auto;
+  }
+  .annotation {
+    position: absolute; right: 24px; color: #fdcb6e; font-size: 12px;
+    font-style: italic; font-family: "Microsoft YaHei", sans-serif;
+  }
+
+  /* ===== Progress bar ===== */
+  .progress-bar {
+    height: 8px; background: var(--border); border-radius: 4px; margin: 8px 0; overflow: hidden;
+  }
+  .progress-fill { height: 100%; border-radius: 4px; background: var(--accent); }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 768px) {
+    .card-grid, .card-grid-3, .compare { grid-template-columns: 1fr; }
+    .cover { padding: 40px 24px; }
+    .cover h1 { font-size: 24px; }
+  }
+
+  /* ===== TOC ===== */
+  .toc { background: var(--card); border-radius: 12px; padding: 24px 28px; border: 1px solid var(--border); }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin: 6px 0; font-size: 14px; }
+
+  /* ===== Stage badges ===== */
+  .stage { display: inline-block; padding: 4px 14px; border-radius: 16px; font-size: 12px; font-weight: 700; color: #fff; }
+  .stage-1 { background: var(--phase1); }
+  .stage-2 { background: var(--phase2); }
+  .stage-3 { background: var(--phase3); }
+
+  hr { border: 0; border-top: 1px solid var(--border); margin: 28px 0; }
+</style>
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<nav>
+  <span class="brand">🛰️ 数据统一方案</span>
+  <a href="#intro">1. 入门</a>
+  <a href="#earthdial">2. EarthDial</a>
+  <a href="#datasets">3. 我们的数据</a>
+  <a href="#transform">4. 转换方案</a>
+  <a href="#pipeline">5. 脚本流程</a>
+  <a href="#summary">6. 总结</a>
+</nav>
+
+<div class="container">
+
+<!-- ===== COVER ===== -->
+<div class="cover">
+  <h1>🛰️ 遥感多模态数据集统一方案</h1>
+  <p class="subtitle">参照 EarthDial 架构，将 7 个异构遥感数据集统一为一种格式，<br>为后续联合训练做准备</p>
+  <div class="badges">
+    <span class="badge">📦 7 个数据集</span>
+    <span class="badge">🏷️ 6 种任务类型</span>
+    <span class="badge">🌐 中英双语</span>
+    <span class="badge">📐 480GB 原始数据</span>
+    <span class="badge">🐍 Python 脚本</span>
+  </div>
+</div>
+
+<!-- ===== TOC ===== -->
+<div class="toc" style="margin-bottom: 32px;">
+  <h3 style="margin-bottom: 8px;">📑 目录</h3>
+  <ol>
+    <li><a href="#intro">多模态大模型（MLLM）训练数据长什么样？</a> — 基础知识扫盲</li>
+    <li><a href="#earthdial">EarthDial 是怎么统一异构数据的？</a> — 核心设计思想</li>
+    <li><a href="#datasets">我们手上有哪些数据？各自长什么样？</a> — 数据集盘点</li>
+    <li><a href="#transform">我们要做什么：从「各自为政」到「统一格式」</a> — 转换前后对比</li>
+    <li><a href="#pipeline">脚本架构与执行流程</a> — 谁来干活、怎么跑</li>
+    <li><a href="#summary">总结：完成后我们能得到什么</a></li>
+  </ol>
+</div>
+
+
+<!-- ========== PART 1 ========== -->
+<section id="intro">
+  <div class="section-title"><span class="section-num">1</span> 多模态大模型（MLLM）训练数据长什么样？</div>
+  <p class="section-desc">在写转换脚本之前，先搞懂目标格式：一条"训练样本"到底包含什么。</p>
+
+  <div class="card">
+    <h3>📝 核心概念：一条「对话样本」（Conversation Sample）</h3>
+    <p>多模态大模型的训练数据，本质上就是<strong>"图文对话记录"</strong>。每条样本 = 一张(或多张)图 + 一段对话。</p>
+    <p style="margin-top:12px;">目前社区最通用的格式是 <span class="inline-code">LLaVA Conversation JSON</span>，下面是它的结构解剖：</p>
+
+    <div style="position:relative;">
+      <pre>{
+  <span class="key-highlight">"id"</span>: <span class="str-highlight">"vrsbench/train/00042"</span>,          <span style="color:#fdcb6e;">← 样本唯一ID（数据集/划分/序号）</span>
+  <span class="key-highlight">"image"</span>: <span class="str-highlight">"Images_train/00002_0000.png"</span>,   <span style="color:#fdcb6e;">← 图片的相对路径</span>
+  <span class="key-highlight">"conversations"</span>: [                           <span style="color:#fdcb6e;">← 对话内容，每条是一个说话回合</span>
+    {
+      <span class="key-highlight">"from"</span>: <span class="str-highlight">"human"</span>,                        <span style="color:#fdcb6e;">← 谁在说话（human / gpt）</span>
+      <span class="key-highlight">"value"</span>: <span class="str-highlight">"&lt;image&gt;\n[caption] 描述这张图。"</span>  <span style="color:#fdcb6e;">← &lt;image&gt; 是图片占位符</span>
+    },
+    {
+      <span class="key-highlight">"from"</span>: <span class="str-highlight">"gpt"</span>,
+      <span class="key-highlight">"value"</span>: <span class="str-highlight">"图中显示一个收费站..."</span>        <span style="color:#fdcb6e;">← 期望模型输出的回答</span>
+    }
+  ]
+}</pre>
+    </div>
+
+    <p style="margin-top: 12px;">训练时，模型看到 <span class="inline-code">&lt;image&gt;</span> 就知道这里有一张图，看到 <span class="inline-code">[caption]</span> 就知道要做什么任务。它学习的是：<strong>给定图片 + 指令 → 生成正确回答</strong>。</p>
+  </div>
+
+  <div class="card">
+    <h3>🎯 不同任务的数据格式差异</h3>
+    <table>
+      <tr><th>任务</th><th>输入</th><th>输出</th><th>示例</th></tr>
+      <tr>
+        <td><span class="tag" style="background:#74b9ff;color:#fff;">Caption</span></td>
+        <td>单张图</td><td>一段描述文字</td>
+        <td style="font-size:13px;">"图中有一座桥梁横跨河流..."</td>
+      </tr>
+      <tr>
+        <td><span class="tag" style="background:#a29bfe;color:#fff;">Referring</span></td>
+        <td>单张图 + 物体描述</td><td>坐标框 (bbox)</td>
+        <td style="font-size:13px;">"{&lt;25&gt;&lt;40&gt;&lt;33&gt;&lt;60&gt;}"</td>
+      </tr>
+      <tr>
+        <td><span class="tag" style="background:#00b894;color:#fff;">VQA</span></td>
+        <td>单张图 + 问题</td><td>简短答案</td>
+        <td style="font-size:13px;">"3 辆车" / "是" / "城市"</td>
+      </tr>
+      <tr>
+        <td><span class="tag" style="background:#e17055;color:#fff;">ChangeCaption</span></td>
+        <td><strong>两张图</strong>（前后时相）</td><td>一段变化描述</td>
+        <td style="font-size:13px;">"新建了一栋建筑，原来空地上..."</td>
+      </tr>
+      <tr>
+        <td><span class="tag" style="background:#d63031;color:#fff;">ChangeDet</span></td>
+        <td><strong>两张图</strong></td><td>变化/无变化 (+ mask)</td>
+        <td style="font-size:13px;">"change" / "no change"</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="note">
+    <strong>💡 关键理解</strong>：无论什么任务（描述/问答/定位），最终都统一为<strong>"图+文→文"</strong>的形式。
+    变化检测的特殊之处在于输入是<strong>两张图</strong>（时相A + 时相B），输出在某些情况下可以是 mask 图，但 MLLM 通常用文字表述变化内容。
+  </div>
+</section>
+
+<hr>
+
+<!-- ========== PART 2 ========== -->
+<section id="earthdial">
+  <div class="section-title"><span class="section-num">2</span> EarthDial 是怎么统一异构数据的？</div>
+  <p class="section-desc">EarthDial 是发表在顶会上的一篇遥感多模态大模型论文，它的核心贡献就是一套<strong>异构数据统一框架</strong>。我们参照它的设计来做数据预处理。</p>
+
+  <!-- Innovation 1 -->
+  <div class="card">
+    <h3>🔑 创新一：统一 Token 体系</h3>
+    <p>每条样本前面都带上两个特殊 token：<strong>模态 token</strong>（标明传感器/分辨率/波段）+ <strong>任务 token</strong>（标明要做什么任务）。这样，一个 LLM 就能看懂"这张图从哪来、我要干什么"。</p>
+
+    <div class="card-grid">
+      <div>
+        <h4 style="margin-bottom: 8px;">Token 前缀的结构</h4>
+        <pre><span class="token-highlight">[optical 512 rgb]</span> <span style="color:#55efc4;">[caption]</span>
+ <span style="color:#636e72;">↑                  ↑
+ 模态token           任务token
+ (传感器 分辨率 波段)  (做什么)</span></pre>
+      </div>
+      <div>
+        <h4 style="margin-bottom: 8px;">实际样本举例</h4>
+        <pre><span style="color:#636e72;"># 变化描述 (LEVIR)</span>
+<span class="token-highlight">[optical 256 rgb]</span><span style="color:#55efc4;">[changecaption]</span>
+Describe the changes...
+
+<span style="color:#636e72;"># 视觉定位 (XLRS, 大图)</span>
+<span class="token-highlight">[optical 7360 rgb]</span><span style="color:#55efc4;">[refer]</span>
+请定位图片右下角的蓝色汽车...
+
+<span style="color:#636e72;"># VQA (中等分辨率)</span>
+<span class="token-highlight">[optical 512 rgb]</span><span style="color:#55efc4;">[vqa]</span>
+图中收费站的颜色是什么？</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Innovation 2 -->
+  <div class="card">
+    <h3>🧩 创新二：Adaptive High Resolution（自适应高分辨率切图）</h3>
+    <p>遥感图像的尺寸差异极大——小的 256×256，大的 11500×7500。如果粗暴缩放到同一尺寸，小图会失真，大图会丢失细节。<br>
+    <strong>EarthDial 的做法</strong>：把大图切成 448×448 的小块（tile），训练时取 1~12 块，推理时最多 40 块。</p>
+
+    <div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap; justify-content: center; padding: 16px 0;">
+      <!-- Small image -->
+      <div style="text-align: center;">
+        <div style="width:80px;height:80px;background: linear-gradient(135deg, #74b9ff, #a29bfe); border-radius: 8px; margin: 0 auto 8px;"></div>
+        <span style="font-size:12px; color:var(--muted);">256×256<br>不切</span>
+      </div>
+      <span style="font-size:24px;color:var(--muted);">→</span>
+      <!-- Medium image tiled -->
+      <div style="text-align: center;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;width:160px;height:160px;">
+          <div style="background: linear-gradient(135deg, #74b9ff, #55efc4); border-radius: 4px;"></div>
+          <div style="background: linear-gradient(135deg, #a29bfe, #fd79a8); border-radius: 4px;"></div>
+          <div style="background: linear-gradient(135deg, #fd79a8, #fdcb6e); border-radius: 4px;"></div>
+          <div style="background: linear-gradient(135deg, #55efc4, #74b9ff); border-radius: 4px;"></div>
+        </div>
+        <span style="font-size:12px; color:var(--muted);">512×512<br>4 tiles</span>
+      </div>
+      <span style="font-size:24px;color:var(--muted);">→</span>
+      <!-- Large image many tiles -->
+      <div style="text-align: center;">
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:2px;width:180px;height:108px;">
+          <div style="background:#74b9ff;border-radius:2px;"></div><div style="background:#a29bfe;border-radius:2px;"></div><div style="background:#55efc4;border-radius:2px;"></div><div style="background:#fd79a8;border-radius:2px;"></div><div style="background:#fdcb6e;border-radius:2px;"></div>
+          <div style="background:#55efc4;border-radius:2px;"></div><div style="background:#fd79a8;border-radius:2px;"></div><div style="background:#74b9ff;border-radius:2px;"></div><div style="background:#fdcb6e;border-radius:2px;"></div><div style="background:#a29bfe;border-radius:2px;"></div>
+          <div style="background:#a29bfe;border-radius:2px;"></div><div style="background:#55efc4;border-radius:2px;"></div><div style="background:#fd79a8;border-radius:2px;"></div><div style="background:#74b9ff;border-radius:2px;"></div><div style="background:#fdcb6e;border-radius:2px;"></div>
+        </div>
+        <span style="font-size:12px; color:var(--muted);">4096×4096<br>81 tiles</span>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top: 16px;">
+      <strong>我们的处理</strong>：LEVIR (256×256) 和 VRSBench (512×512) 不切；XLRS 系列 (4096+) 和 MME-RealWorld 遥感子集 (最大 11500) 需要切成 448×448 tile。
+    </div>
+  </div>
+
+  <!-- Innovation 3 -->
+  <div class="card">
+    <h3>🔬 创新三：Data Fusion（多模态数据融合）</h3>
+    <p>对于多光谱/SAR/多时相这类"非标准RGB"输入，EarthDial 的做法是：每 3 个通道分一组过 ViT 提特征，然后用双线性插值压缩聚合，统一映射到与 RGB 相同的视觉 token 空间。</p>
+
+    <div class="note">
+      <strong>⏸️ 本次暂不实现</strong>：我们目前的数据集都是 RGB/灰度图，没有 SAR 或多光谱数据。Data Fusion 模块留到后续有相关数据时再做。当前脚本只处理 <strong>Token 前缀生成</strong> 和 <strong>切图</strong> 两个环节。
+    </div>
+  </div>
+
+  <!-- 3-stage training -->
+  <div class="card">
+    <h3>📈 附加知识：三阶段渐进训练（论文中的训练策略）</h3>
+    <table>
+      <tr><th>阶段</th><th>训练什么</th><th>冻结什么</th><th>用什么数据</th><th>目的</th></tr>
+      <tr>
+        <td><span class="stage stage-1">Stage 1</span></td>
+        <td>ViT + MLP + LLM <strong>全部</strong></td>
+        <td>无</td>
+        <td>只有单图 RGB</td>
+        <td>建立基础视觉-语言对齐能力（最简单场景）</td>
+      </tr>
+      <tr>
+        <td><span class="stage stage-2">Stage 2</span></td>
+        <td>LLM + MLP</td>
+        <td><strong>ViT</strong></td>
+        <td>RGB + 时序数据</td>
+        <td>让模型理解"时间变化"（但不动视觉编码器）</td>
+      </tr>
+      <tr>
+        <td><span class="stage stage-3">Stage 3</span></td>
+        <td>LLM + MLP + DataFusion</td>
+        <td><strong>ViT</strong></td>
+        <td>+ 多光谱 / SAR</td>
+        <td>引入更复杂的传感器输入</td>
+      </tr>
+    </table>
+    <p style="margin-top: 12px; color: var(--muted); font-size: 14px;">
+      核心逻辑：先用最简单的 RGB 建立基础能力 → 再逐步扩展到时序和多光谱 → 避免一次性训所有数据导致模型难以收敛。<br>
+      <strong>这是训练阶段的策略，我们当前只做数据预处理，不需要管这一层。</strong>
+    </p>
+  </div>
+</section>
+
+<hr>
+
+<!-- ========== PART 3 ========== -->
+<section id="datasets">
+  <div class="section-title"><span class="section-num">3</span> 我们手上有哪些数据？各自长什么样？</div>
+  <p class="section-desc">7 个数据集，4 种不同的存储格式。先看懂每个的"原样"，才能设计转换脚本。</p>
+
+  <!-- Dataset overview table -->
+  <div class="card">
+    <h3>📊 数据集全家福</h3>
+    <table style="font-size:13px;">
+      <tr><th>数据集</th><th>任务</th><th>语言</th><th>存储格式</th><th>图片尺寸</th><th>数据量</th></tr>
+      <tr>
+        <td>LEVIR-MCI</td>
+        <td><span class="tag" style="background:#e17055;color:#fff;">变化描述</span> <span class="tag" style="background:#d63031;color:#fff;">变化检测</span></td>
+        <td><span class="tag tag-en">EN</span></td>
+        <td><span class="tag tag-json">JSON</span></td>
+        <td>256×256</td>
+        <td>~40K 图片 + 标注</td>
+      </tr>
+      <tr>
+        <td>Levir-CC</td>
+        <td><span class="tag" style="background:#e17055;color:#fff;">变化描述</span></td>
+        <td><span class="tag tag-en">EN</span></td>
+        <td><span class="tag tag-json">JSON</span></td>
+        <td>256×256</td>
+        <td>~10K A/B 图片对</td>
+      </tr>
+      <tr>
+        <td>VRSBench</td>
+        <td><span class="tag" style="background:#74b9ff;color:#fff;">Caption</span> <span class="tag" style="background:#a29bfe;color:#fff;">Refer</span> <span class="tag" style="background:#00b894;color:#fff;">VQA</span></td>
+        <td><span class="tag tag-en">EN</span></td>
+        <td><span class="tag tag-llava">LLaVA JSON</span></td>
+        <td>~512×512</td>
+        <td>14.2万条对话</td>
+      </tr>
+      <tr>
+        <td>MME-RealWorld</td>
+        <td><span class="tag" style="background:#00b894;color:#fff;">VQA</span>（多选）</td>
+        <td><span class="tag tag-en">EN</span> <span class="tag tag-zh">ZH</span></td>
+        <td><span class="tag tag-json">JSON</span></td>
+        <td>最大 11500</td>
+        <td>~3.7K 遥感条目</td>
+      </tr>
+      <tr>
+        <td>XLRS-Bench-lite</td>
+        <td><span class="tag" style="background:#00b894;color:#fff;">VQA</span>（多选，复杂推理）</td>
+        <td><span class="tag tag-en">EN</span></td>
+        <td><span class="tag tag-hf">Arrow</span></td>
+        <td>4096×4096</td>
+        <td>~3.2K 条</td>
+      </tr>
+      <tr>
+        <td>XLRS-caption-zh</td>
+        <td><span class="tag" style="background:#74b9ff;color:#fff;">Caption</span></td>
+        <td><span class="tag tag-zh">ZH</span></td>
+        <td><span class="tag tag-hf">Arrow</span></td>
+        <td>最大 4096</td>
+        <td>~22K 条</td>
+      </tr>
+      <tr>
+        <td>XLRS-VG-zh</td>
+        <td><span class="tag" style="background:#a29bfe;color:#fff;">Refer</span></td>
+        <td><span class="tag tag-zh">ZH</span></td>
+        <td><span class="tag tag-hf">Arrow</span></td>
+        <td>最大 10000</td>
+        <td>~64K 条</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Format examples -->
+  <div class="card">
+    <h3>📦 四种原始存储格式，一次看清楚</h3>
+
+    <h4>格式①：LEVIR 标准 JSON（变化描述专用）</h4>
+    <pre>{
+  "images": [
+    {
+      <span class="key-highlight">"filepath"</span>: <span class="str-highlight">"train"</span>,
+      <span class="key-highlight">"filename"</span>: <span class="str-highlight">"train_000042.png"</span>,
+      <span class="key-highlight">"imgid"</span>: 41,
+      <span class="key-highlight">"changeflag"</span>: 1,                <span class="comment">← 0=没变化, 1=有变化</span>
+      <span class="key-highlight">"split"</span>: <span class="str-highlight">"train"</span>,
+      <span class="key-highlight">"sentences"</span>: [                    <span class="comment">← 每张图有5条变化描述</span>
+        {<span class="key-highlight">"raw"</span>: <span class="str-highlight">"a new building appears..."</span>, <span class="key-highlight">"sentid"</span>: 205},
+        ...
+      ]
+    },
+    ...
+  ]
+}</pre>
+
+    <h4 style="margin-top: 20px;">格式②：LLaVA Conversation JSON（VRSBench）</h4>
+    <pre>[
+  {
+    <span class="key-highlight">"id"</span>: <span class="str-highlight">"Final_Data/v1.2"</span>,
+    <span class="key-highlight">"image"</span>: <span class="str-highlight">"00002_0000.png"</span>,
+    <span class="key-highlight">"conversations"</span>: [
+      {<span class="key-highlight">"from"</span>: <span class="str-highlight">"human"</span>,   <span class="key-highlight">"value"</span>: <span class="str-highlight">"&lt;image&gt;\n[caption] Describe...</span>"},
+      {<span class="key-highlight">"from"</span>: <span class="str-highlight">"gpt"</span>,     <span class="key-highlight">"value"</span>: <span class="str-highlight">"The image shows..."</span>}
+    ]
+  },
+  { <span class="comment">← 同一张图，可以有多条不同任务</span>
+    <span class="key-highlight">"id"</span>: <span class="str-highlight">"Final_Data/v1.2"</span>,
+    <span class="key-highlight">"image"</span>: <span class="str-highlight">"00002_0000.png"</span>,
+    <span class="key-highlight">"conversations"</span>: [
+      {<span class="key-highlight">"from"</span>: <span class="str-highlight">"human"</span>,   <span class="key-highlight">"value"</span>: <span class="str-highlight">"&lt;image&gt;\n[refer] location for &lt;p&gt;toll station&lt;/p&gt;?</span>"},
+      {<span class="key-highlight">"from"</span>: <span class="str-highlight">"gpt"</span>,     <span class="key-highlight">"value"</span>: <span class="str-highlight">"{&lt;45&gt;&lt;45&gt;&lt;59&gt;&lt;59&gt;}"</span>}  <span class="comment">← 归一化坐标</span>
+    ]
+  }
+]</pre>
+
+    <h4 style="margin-top: 20px;">格式③：HuggingFace Arrow（XLRS 系列）</h4>
+    <p>这是一种<strong>二进制列式存储</strong>格式，图片的 JPEG 字节直接嵌在 Arrow 文件里。需要用 Python 的 <span class="inline-code">pyarrow</span> 或 <span class="inline-code">datasets</span> 库读取。</p>
+    <table style="font-size:13px;">
+      <tr><th>数据集</th><th>分片数</th><th>每片大小</th><th>Schema（列名）</th></tr>
+      <tr>
+        <td>XLRS-lite</td><td>74</td><td>~500MB</td>
+        <td><code>path, index, question, options[], answer, category, l2-category, image[{bytes, path}]</code></td>
+      </tr>
+      <tr>
+        <td>XLRS-caption-zh</td><td>22</td><td>~100-900MB</td>
+        <td><code>question_id, question, answer[], id, image{bytes, path}</code></td>
+      </tr>
+      <tr>
+        <td>XLRS-VG-zh</td><td>64+64</td><td>~800MB-1GB</td>
+        <td><code>image_width, image_height, question_id, image{bytes, path}, question, answer, bbox[], category</code></td>
+      </tr>
+    </table>
+
+    <h4 style="margin-top: 20px;">格式④：MME-RealWorld JSON（多选题 VQA）</h4>
+    <pre>{
+  <span class="key-highlight">"Question_id"</span>: <span class="str-highlight">"Perception/.../0000"</span>,
+  <span class="key-highlight">"Image"</span>: <span class="str-highlight">"remote_sensing/xxx.jpg"</span>,
+  <span class="key-highlight">"Text"</span>: <span class="str-highlight">"What objects are visible?"</span>,
+  <span class="key-highlight">"Answer choices"</span>: [<span class="str-highlight">"(A) car &amp; tree"</span>, <span class="str-highlight">"(B) ..."</span>, ...],
+  <span class="key-highlight">"Ground truth"</span>: <span class="str-highlight">"D"</span>,               <span class="comment">← 正确答案是选项字母</span>
+  <span class="key-highlight">"Task"</span>: <span class="str-highlight">"Perception"</span>,
+  <span class="key-highlight">"Subtask"</span>: <span class="str-highlight">"remote_sensing"</span>
+}</pre>
+  </div>
+</section>
+
+<hr>
+
+<!-- ========== PART 4 ========== -->
+<section id="transform">
+  <div class="section-title"><span class="section-num">4</span> 我们要做什么：从「各自为政」到「统一格式」</div>
+  <p class="section-desc">核心思路：每个数据集写一个转换脚本，把它的"原样"翻译成统一的 LLaVA Conversation JSON + EarthDial Token 前缀。</p>
+
+  <div class="card">
+    <h3>🔄 转换全景图：Before → After</h3>
+
+    <div class="compare" style="margin-top: 16px;">
+      <div class="before">
+        <h4>❌ Before：LEVIR-MCI（JSON）</h4>
+        <pre style="font-size:11px; background:#2d1e1e;">{
+  "filepath": "train",
+  "filename": "train_000042.png",
+  "changeflag": 1,
+  "sentences": [{
+    "raw": "a new building appears"
+  }]
+}</pre>
+        <p style="font-size:12px; color:#d63031; margin-top:8px;">问题：单张合并图，没有token前缀，不兼容其他数据集</p>
+      </div>
+      <div class="after">
+        <h4>✅ After：统一格式</h4>
+        <pre style="font-size:11px; background:#1e2d1e;">{
+  "id": "levir_mci/train/0042",
+  "images": ["levir_mci/train_000042.png"],
+  "conversations": [
+    {"from":"human",
+     "value":"&lt;image&gt;\n[optical 256 rgb][changecaption]
+              Describe the changes..."},
+    {"from":"gpt",
+     "value":"a new building appears..."}
+  ],
+  "task": "changecaption",
+  "sensor": "optical",
+  "resolution": 256,
+  "bands": "rgb",
+  "source": "levir_mci",
+  "language": "en",
+  "split": "train"
+}</pre>
+        <p style="font-size:12px; color:#00b894; margin-top:8px;">优势：统一schema + token前缀 + 元数据 + 兼容LLaMA-Factory</p>
+      </div>
+    </div>
+
+    <div class="compare" style="margin-top: 16px;">
+      <div class="before">
+        <h4>❌ Before：XLRS Visual Grounding（Arrow）</h4>
+        <pre style="font-size:11px; background:#2d1e1e;">Arrow Table (64 shards)
+Schema:
+  image_width: 7360
+  image_height: 4912
+  question: "给定一个7360x4912像素..."
+  bbox: [xmin, ymin, xmax, ymax]
+  image: {bytes: &lt;JPEG binary&gt;, path: "..."}</pre>
+        <p style="font-size:12px; color:#d63031; margin-top:8px;">问题：二进制格式，图片嵌在文件里，坐标系统不统一</p>
+      </div>
+      <div class="after">
+        <h4>✅ After：统一格式 + 切图</h4>
+        <pre style="font-size:11px; background:#1e2d1e;">{
+  "id": "xlrs_vg/train/02950",
+  "images": ["xlrs_vg/DOTA_v2_P5729_0_0.jpg",
+             "xlrs_vg/DOTA_v2_P5729_0_1.jpg",
+             ... <span class="comment">← 81个tile</span> ],
+  "conversations": [
+    {"from":"human",
+     "value":"&lt;image&gt;\n[optical 7360 rgb][refer]
+              请定位右下角蓝色汽车..."},
+    {"from":"gpt",
+     "value":"bbox: [0.82,0.73,0.87,0.78]"}
+  ],
+  "task": "refer",
+  "resolution": 7360,
+  "language": "zh",
+  "source": "xlrs_vg"
+}</pre>
+        <p style="font-size:12px; color:#00b894; margin-top:8px;">优势：图片已提取+切分，坐标归一化，中文token标注</p>
+      </div>
+    </div>
+
+    <div class="compare" style="margin-top: 16px;">
+      <div class="before">
+        <h4>❌ Before：MME-RealWorld（JSON 多选）</h4>
+        <pre style="font-size:11px; background:#2d1e1e;">{
+  "Question_id": "remote_sensing/0000",
+  "Image": "remote_sensing/image.jpg",
+  "Text": "What is visible?",
+  "Answer choices": ["(A) ...", "(B) ...",
+                     "(C) ...", "(D) ..."],
+  "Ground truth": "D",
+  "Subtask": "remote_sensing"
+}</pre>
+        <p style="font-size:12px; color:#d63031; margin-top:8px;">问题：多选格式特殊，图片超大（11500px），遥感子集与其他混在一起</p>
+      </div>
+      <div class="after">
+        <h4>✅ After：统一格式（仅遥感子集）</h4>
+        <pre style="font-size:11px; background:#1e2d1e;">{
+  "id": "mme_rw/train/0000",
+  "images": ["mme_rw/image_r0_c0.jpg", ...],
+  "conversations": [
+    {"from":"human",
+     "value":"&lt;image&gt;\n[optical 11500 rgb][vqa]
+              What is visible?\n(A)...\n(B)...\n(C)...\n(D)..."},
+    {"from":"gpt",
+     "value":"D"}
+  ],
+  "task": "vqa",
+  "resolution": 11500,
+  "source": "mme_realworld"
+}</pre>
+        <p style="font-size:12px; color:#00b894; margin-top:8px;">优势：多选选项直接写入human消息，答案只保留选项字母</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🎯 每个转换脚本干什么活（一句话概括）</h3>
+    <table>
+      <tr><th>脚本</th><th>输入</th><th>主要动作</th><th>复杂度</th></tr>
+      <tr>
+        <td><code>convert_levir_mci.py</code></td>
+        <td>JSON + 图片文件</td>
+        <td>读JSON → 每条sentence生成一条conversation → 生成token前缀 → 输出</td>
+        <td>⭐ 简单</td>
+      </tr>
+      <tr>
+        <td><code>convert_levir_cc.py</code></td>
+        <td>JSON + A/B分目录图片</td>
+        <td>读JSON → 匹配A/B文件对 → 双图放入images列表 → 生成token前缀</td>
+        <td>⭐ 简单</td>
+      </tr>
+      <tr>
+        <td><code>convert_vrsbench.py</code></td>
+        <td>LLaVA JSON + 图片</td>
+        <td>解析已有LLaVA格式 → 替换任务标签为EarthDial token → 坐标归一化</td>
+        <td>⭐⭐ 中等</td>
+      </tr>
+      <tr>
+        <td><code>convert_xlrs_lite.py</code></td>
+        <td>Arrow 分片（二进制）</td>
+        <td>流式读Arrow → 提取内嵌JPEG字节存盘 → 切4096大图为tile → 生成token前缀</td>
+        <td>⭐⭐⭐ 较难</td>
+      </tr>
+      <tr>
+        <td><code>convert_xlrs_caption_zh.py</code></td>
+        <td>Arrow 分片（二进制）</td>
+        <td>流式读Arrow → 提取图片 → 按实际分辨率切图 → 中文标注</td>
+        <td>⭐⭐⭐ 较难</td>
+      </tr>
+      <tr>
+        <td><code>convert_xlrs_vg.py</code></td>
+        <td>Arrow 分片（120GB）</td>
+        <td>流式读Arrow → 提取超大图 → 切大量tile → bbox坐标归一化</td>
+        <td>⭐⭐⭐ 较难</td>
+      </tr>
+      <tr>
+        <td><code>convert_mme_realworld.py</code></td>
+        <td>JSON + 超大图片</td>
+        <td>过滤遥感子集 → 将多选选项格式化写入human → 切超大图</td>
+        <td>⭐⭐ 中等</td>
+      </tr>
+      <tr>
+        <td><code>merge_datasets.py</code></td>
+        <td>上面所有产出</td>
+        <td>按split拼接 → 任务平衡采样 → 输出train/val/test.json</td>
+        <td>⭐ 简单</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<hr>
+
+<!-- ========== PART 5 ========== -->
+<section id="pipeline">
+  <div class="section-title"><span class="section-num">5</span> 脚本架构与执行流程</div>
+  <p class="section-desc">10个Python脚本，按依赖顺序执行。底层工具函数复用，避免重复代码。</p>
+
+  <div class="card">
+    <h3>📁 文件结构</h3>
+    <pre style="font-size:12px;">scripts/
+├── <span style="color:#fdcb6e;">config.py</span>              <span class="comment">← 全局配置（路径、token映射、切图参数）</span>
+├── utils/
+│   ├── <span style="color:#fdcb6e;">token_prefix.py</span>   <span class="comment">← 根据传感器/分辨率/波段/任务生成token前缀</span>
+│   ├── <span style="color:#fdcb6e;">tiler.py</span>          <span class="comment">← 448×448切图引擎，处理超大遥感影像</span>
+│   └── <span style="color:#fdcb6e;">image_utils.py</span>    <span class="comment">← 图片加载/保存/格式转换（灰度→RGB等）</span>
+├── <span style="color:#55efc4;">convert_levir_mci.py</span>    <span class="comment">← ① 变化描述+变化检测</span>
+├── <span style="color:#55efc4;">convert_levir_cc.py</span>     <span class="comment">← ② 变化描述（A/B分目录）</span>
+├── <span style="color:#55efc4;">convert_vrsbench.py</span>     <span class="comment">← ③ Caption+Refer+VQA（LLaVA格式来源）</span>
+├── <span style="color:#55efc4;">convert_xlrs_lite.py</span>    <span class="comment">← ④ 复杂推理VQA（Arrow→JSON）</span>
+├── <span style="color:#55efc4;">convert_xlrs_caption_zh.py</span> <span class="comment">← ⑤ 中文Caption（Arrow→JSON）</span>
+├── <span style="color:#55efc4;">convert_xlrs_vg.py</span>      <span class="comment">← ⑥ 视觉定位（Arrow→JSON，含坐标）</span>
+├── <span style="color:#55efc4;">convert_mme_realworld.py</span> <span class="comment">← ⑦ 多选VQA（仅遥感子集）</span>
+├── <span style="color:#a29bfe;">merge_datasets.py</span>     <span class="comment">← ⑧ 合并所有→统一train/val/test</span>
+├── <span style="color:#a29bfe;">validate.py</span>          <span class="comment">← ⑨ 校验schema+统计</span>
+└── <span style="color:#a29bfe;">run_all.py</span>           <span class="comment">← ⑩ 一键运行入口</span></pre>
+  </div>
+
+  <div class="card">
+    <h3>🔗 执行顺序（依赖关系）</h3>
+    <div class="timeline">
+      <div class="tl-item"><h4>第1步：基础设施</h4><p><code>config.py</code> → <code>token_prefix.py</code> → <code>image_utils.py</code>：所有脚本都依赖这些底层模块</p></div>
+      <div class="tl-item"><h4>第2步：切图引擎</h4><p><code>tiler.py</code>：XLRS 系列和 MME 大图都需要切 448×448 tile</p></div>
+      <div class="tl-item"><h4>第3步：简单数据集（验证流程）</h4><p><code>convert_levir_mci.py</code> + <code>convert_levir_cc.py</code>：标准JSON+小图，最简单，先跑通</p></div>
+      <div class="tl-item"><h4>第4步：核心数据集</h4><p><code>convert_vrsbench.py</code>：数据量最大（14.2万条），覆盖3种任务，确立转换范本</p></div>
+      <div class="tl-item"><h4>第5步：Arrow数据集</h4><p><code>convert_xlrs_lite.py</code> → <code>convert_xlrs_caption_zh.py</code>：Arrow流式读取+切图</p></div>
+      <div class="tl-item"><h4>第6步：最复杂数据集</h4><p><code>convert_xlrs_vg.py</code>：120GB数据+超大图切分+bbox坐标归一化</p></div>
+      <div class="tl-item"><h4>第7步：多选VQA</h4><p><code>convert_mme_realworld.py</code>：多选格式处理</p></div>
+      <div class="tl-item"><h4>第8步：合并与校验</h4><p><code>merge_datasets.py</code> → <code>validate.py</code>：拼成最终产出+质量检查</p></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>🏗️ 核心工具函数设计</h3>
+
+    <div class="card-grid">
+      <div>
+        <h4>token_prefix.py</h4>
+        <pre style="font-size:12px;"><span style="color:#fdcb6e;">def</span> <span style="color:#55efc4;">make_token_prefix</span>(
+    sensor=<span class="str-highlight">"optical"</span>,
+    resolution=<span class="str-highlight">512</span>,
+    bands=<span class="str-highlight">"rgb"</span>,
+    task=<span class="str-highlight">"caption"</span>
+) -> str:
+    <span style="color:#fdcb6e;">return</span> <span class="str-highlight">f"[{sensor} {resolution} {bands}][{task}]"</span>
+
+<span class="comment"># 示例调用</span>
+prefix = make_token_prefix(
+    <span class="str-highlight">"optical"</span>, 256, <span class="str-highlight">"rgb"</span>, <span class="str-highlight">"changecaption"</span>
+)
+<span class="comment"># → "[optical 256 rgb][changecaption]"</span></pre>
+      </div>
+      <div>
+        <h4>tiler.py</h4>
+        <pre style="font-size:12px;"><span style="color:#fdcb6e;">def</span> <span style="color:#55efc4;">tile_image</span>(
+    image_path: Path,
+    tile_size=<span class="str-highlight">448</span>,
+    stride=<span class="str-highlight">448</span>,
+    output_dir: Path
+) -> <span class="key-highlight">list[dict]</span>:
+    <span class="comment"># 1. 如果短边≤448，不切，直接复制</span>
+    <span class="comment"># 2. 否则按网格切448×448小块</span>
+    <span class="comment"># 3. 保存为 xxx_r0_c0.jpg, xxx_r0_c1.jpg ...</span>
+    <span class="comment"># 4. 返回 [{path, offset, size}, ...]</span>
+    <span style="color:#fdcb6e;">return</span> tiles_info</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr>
+
+<!-- ========== PART 6 ========== -->
+<section id="summary">
+  <div class="section-title"><span class="section-num">6</span> 总结：完成后我们能得到什么</div>
+
+  <div class="card-grid-3" style="margin-top: 20px;">
+    <div class="card" style="text-align: center;">
+      <div style="font-size: 48px; margin-bottom: 8px;">📦</div>
+      <h3>1 种统一格式</h3>
+      <p style="color: var(--muted); font-size: 14px;">所有数据集都转为 LLaVA Conversation JSON，可直接喂给 LLaMA-Factory 等训练框架</p>
+    </div>
+    <div class="card" style="text-align: center;">
+      <div style="font-size: 48px; margin-bottom: 8px;">🏷️</div>
+      <h3>7 个数据集 → 统一</h3>
+      <p style="color: var(--muted); font-size: 14px;">每个样本带 EarthDial token 前缀，模型能区分传感器/分辨率/任务类型</p>
+    </div>
+    <div class="card" style="text-align: center;">
+      <div style="font-size: 48px; margin-bottom: 8px;">🧩</div>
+      <h3>大图自适应切分</h3>
+      <p style="color: var(--muted); font-size: 14px;">超大幅面遥感图自动切成 448×448 tile，保持细节不丢失</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 16px;">
+    <h3>📊 最终产出预估</h3>
+    <table>
+      <tr><th>数据集</th><th>任务</th><th>条目数（约）</th><th>切图后占用</th></tr>
+      <tr><td>LEVIR-MCI</td><td>变化描述 + 变化检测</td><td>~50,000</td><td>不切（256px）</td></tr>
+      <tr><td>Levir-CC</td><td>变化描述</td><td>~40,000</td><td>不切（256px）</td></tr>
+      <tr><td>VRSBench</td><td>Caption + Refer + VQA</td><td>~142,000</td><td>不切（512px）</td></tr>
+      <tr><td>XLRS-lite</td><td>复杂推理VQA</td><td>~3,200</td><td>切片~260K 个tile</td></tr>
+      <tr><td>XLRS-caption-zh</td><td>中文Caption</td><td>~22,000</td><td>切片~1.8M 个tile</td></tr>
+      <tr><td>XLRS-VG-zh</td><td>中文视觉定位</td><td>~64,000</td><td>切片~5.1M 个tile</td></tr>
+      <tr><td>MME-RealWorld</td><td>多选VQA（遥感）</td><td>~3,700</td><td>切片~500K 个tile</td></tr>
+      <tr style="font-weight: 700; background: #f0f8ff;"><td colspan="2">合计</td><td>~325,000 条</td><td>~200GB</td></tr>
+    </table>
+  </div>
+
+  <div class="note" style="margin-top: 16px;">
+    <strong>⚠️ 不在本次范围内的内容</strong>：
+    <ul style="margin-top: 8px; padding-left: 20px;">
+      <li><strong>Data Fusion 模块</strong>：我们目前没有 SAR/多光谱数据，暂不实现</li>
+      <li><strong>训练代码</strong>：只做数据预处理，训练（Lora微调/三阶段等）后续再做</li>
+      <li><strong>VRSBench Eval数据</strong>：暂不转换评测集，先做训练数据</li>
+    </ul>
+  </div>
+
+  <div class="card" style="margin-top: 16px; text-align: center;">
+    <h3>✅ 下一步</h3>
+    <p style="font-size: 16px;">学习完这份材料后，如果你觉得方案没问题，我们就开始按顺序写脚本。<br>
+    先从 <code>config.py</code> 和 <code>utils/</code> 底层工具开始，再逐个攻克数据集转换。</p>
+  </div>
+</section>
+
+</div><!-- container -->
+
+<!-- ===== FOOTER ===== -->
+<div style="text-align:center; padding: 40px 0; color: var(--muted); font-size: 13px;">
+  <p>数据统一方案 · 参照 EarthDial 架构 · 2026.06</p>
+  <p style="margin-top: 4px;">计划文件：<code>d:\my_paper\揭榜挂帅\计划_数据集统一方案.md</code></p>
+</div>
+
+</body>
+</html>
