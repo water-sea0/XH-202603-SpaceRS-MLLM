@@ -1,0 +1,2 @@
+tar -cvf output.tar folder_name/
+tar -xvf rs_vl_bundle_20g.tar -C /root/autodl-tmp/

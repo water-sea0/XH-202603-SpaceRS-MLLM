@@ -130,7 +130,11 @@
         "channels": {"type": "integer", "minimum": 1},
         "format": {"type": ["string", "null"]},
         "byte_size": {"type": ["integer", "null"], "minimum": 0},
-        "sha256_pixels": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"}
+        "sha256_encoded": {
+          "type": ["string", "null"],
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA-256 of the original encoded media bytes, without decoding or re-encoding."
+        }
       }
     },
     "box": {
